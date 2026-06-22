@@ -249,8 +249,9 @@ public class MainActivity extends Activity {
         try{
             long rx=android.net.TrafficStats.getMobileRxBytes();
             long tx=android.net.TrafficStats.getMobileTxBytes();
-            long total=(rx+tx)/1024;
-            tvData.setText("Data: "+(total/1024)+" MB ("+(total)+" KB)");
+            long totalKB=(rx+tx)/1024;
+            String dataText=totalKB>1024?"App চলার পর: "+(totalKB/1024)+" MB":"App চলার পর: "+totalKB+" KB";
+            tvData.setText(dataText);
         }catch(Exception e){}
         new Thread(()->{
             final long ping=measurePing();

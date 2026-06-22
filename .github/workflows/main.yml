@@ -11,10 +11,13 @@ jobs:
           distribution: 'temurin'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+      - name: Restore keystore
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > app/debug.keystore
       - name: Install Gradle
         run: |
-          wget https://services.gradle.org/distributions/gradle-8.0-bin.zip
-          unzip gradle-8.0-bin.zip
+          wget -q https://services.gradle.org/distributions/gradle-8.0-bin.zip
+          unzip -q gradle-8.0-bin.zip
           export PATH=$PATH:$PWD/gradle-8.0/bin
           gradle assembleDebug
       - name: Upload APK

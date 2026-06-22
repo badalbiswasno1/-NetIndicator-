@@ -14,17 +14,25 @@ import android.widget.*;
 import android.view.*;
 import android.graphics.Color;
 import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 public class MainActivity extends Activity {
-    private TextView tvNetworkType,tvPing,tvSignal,tvTime,tvHistory,tvDbm,tvData;
+    private TextView tvNetworkType,tvPing,tvSignal,tvTime,tvDbm,tvData,tvHistory;
     private Handler handler=new Handler();
     private Runnable updater;
-    private StringBuilder history=new StringBuilder();
     private String lastNetwork="";
     private long startTime;
+    private NetworkLogger logger;
+    private long lastPing=0;
+    private SeekBar timeSeek;
+    private TextView tvTimeLabel;
+    private int[] timeOptions={15,30,60,1440};
+    private String[] timeLabels={"১৫ মিনিট","৩০ মিনিট","১ ঘন্টা","সারাদিন"};
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         startTime=System.currentTimeMillis();
+        logger=new NetworkLogger(this);
         ScrollView scroll=new ScrollView(this);
         scroll.setBackgroundColor(Color.parseColor("#111111"));
         LinearLayout main=new LinearLayout(this);
@@ -93,32 +101,52 @@ public class MainActivity extends Activity {
         histTitle.setTypeface(null,android.graphics.Typeface.BOLD);
         histTitle.setPadding(0,15,0,5);
         main.addView(histTitle);
+        tvTimeLabel=new TextView(this);
+        tvTimeLabel.setText("সময়: ১৫ মিনিট");
+        tvTimeLabel.setTextColor(Color.parseColor("#AAAAAA"));
+        tvTimeLabel.setTextSize(13);
+        tvTimeLabel.setGravity(Gravity.CENTER);
+        main.addView(tvTimeLabel);
+        timeSeek=new SeekBar(this);
+        timeSeek.setMax(3);
+        timeSeek.setProgress(0);
+        timeSeek.setPadding(0,10,0,10);
+        timeSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar sb,int p,boolean u){
+                tvTimeLabel.setText("সময়: "+timeLabels[p]);
+                updateHistory(p);
+            }
+            public void onStartTrackingTouch(SeekBar sb){}
+            public void onStopTrackingTouch(SeekBar sb){}
+        });
+        main.addView(timeSeek);
         tvHistory=new TextView(this);
-        tvHistory.setText("এখনো কোনো পরিবর্তন হয়নি");
         tvHistory.setTextColor(Color.parseColor("#CCCCCC"));
-        tvHistory.setTextSize(13);
+        tvHistory.setTextSize(11);
         tvHistory.setPadding(0,5,0,20);
+        tvHistory.setTypeface(android.graphics.Typeface.MONOSPACE);
         main.addView(tvHistory);
-        addLine(main,"#E63329");
-        TextView pingTitle=new TextView(this);
-        pingTitle.setText("পিং রেকর্ড");
-        pingTitle.setTextColor(Color.parseColor("#FFD700"));
-        pingTitle.setTextSize(15);
-        pingTitle.setTypeface(null,android.graphics.Typeface.BOLD);
-        pingTitle.setPadding(0,15,0,20);
-        main.addView(pingTitle);
+        Button clearBtn=new Button(this);
+        clearBtn.setText("ইতিহাস মুছো");
+        clearBtn.setBackgroundColor(Color.parseColor("#E63329"));
+        clearBtn.setTextColor(Color.WHITE);
+        clearBtn.setTextSize(12);
+        clearBtn.setOnClickListener(v->{
+            logger.clear();
+            tvHistory.setText("ইতিহাস মুছে গেছে");
+        });
+        main.addView(clearBtn);
         addLine(main,"#333333");
         Button settingsBtn=new Button(this);
         settingsBtn.setText("⚙ সেটিংস");
         settingsBtn.setBackgroundColor(Color.parseColor("#333333"));
         settingsBtn.setTextColor(Color.WHITE);
         settingsBtn.setTextSize(14);
-        settingsBtn.setPadding(0,20,0,20);
-        LinearLayout.LayoutParams btnParams=new LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT);
-        btnParams.setMargins(0,20,0,0);
-        settingsBtn.setLayoutParams(btnParams);
+        bp.setMargins(0,20,0,0);
+        settingsBtn.setLayoutParams(bp);
         settingsBtn.setOnClickListener(v->startActivity(new Intent(this,SettingsActivity.class)));
         main.addView(settingsBtn);
         setContentView(scroll);
@@ -136,6 +164,7 @@ public class MainActivity extends Activity {
             }
         };
         handler.post(updater);
+        updateHistory(0);
     }
     private void addLine(LinearLayout parent,String color){
         View line=new View(this);
@@ -143,6 +172,46 @@ public class MainActivity extends Activity {
         line.setLayoutParams(new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,3));
         parent.addView(line);
+    }
+    private void updateHistory(int timeIndex){
+        try{
+            JSONArray logs=logger.getLogs();
+            long cutoff=System.currentTimeMillis()-((long)timeOptions[timeIndex]*60*1000);
+            StringBuilder sb=new StringBuilder();
+            sb.append(String.format("%-8s %-4s %-6s %-8s\n","সময়","Net","Ping","Data"));
+            sb.append("--------------------------------\n");
+            long totalData=0;
+            long minPing=Long.MAX_VALUE,maxPing=0;
+            int count=0;
+            for(int i=logs.length()-1;i>=0;i--){
+                JSONObject obj=logs.getJSONObject(i);
+                long ping=obj.getLong("ping");
+                long data=obj.getLong("data");
+                totalData+=data;
+                if(ping>0){
+                    if(ping<minPing)minPing=ping;
+                    if(ping>maxPing)maxPing=ping;
+                }
+                count++;
+                if(count<=20){
+                    sb.append(String.format("%-8s %-4s %-6s %-8s\n",
+                        obj.getString("time").substring(0,8),
+                        obj.getString("network"),
+                        ping>0?ping+"ms":"--",
+                        data+"KB"));
+                }
+            }
+            if(count>0){
+                sb.append("--------------------------------\n");
+                sb.append("মোট: "+count+" রেকর্ড\n");
+                sb.append("Data: "+(totalData/1024)+" MB\n");
+                if(minPing<Long.MAX_VALUE)
+                    sb.append("Best: "+minPing+"ms | Worst: "+maxPing+"ms");
+            }else{
+                sb.append("এখনো কোনো ডেটা নেই");
+            }
+            tvHistory.setText(sb.toString());
+        }catch(Exception e){tvHistory.setText("ইতিহাস লোড হয়নি");}
     }
     private void updateUI(){
         TelephonyManager tm=(TelephonyManager)getSystemService(TELEPHONY_SERVICE);
@@ -153,11 +222,7 @@ public class MainActivity extends Activity {
         tvNetworkType.setTextColor(color);
         tvPing.setTextColor(color);
         if(!network.equals(lastNetwork)){
-            String time=new java.text.SimpleDateFormat("HH:mm:ss",
-                java.util.Locale.getDefault()).format(new java.util.Date());
-            history.insert(0,time+" -> "+network+"\n");
             lastNetwork=network;
-            tvHistory.setText(history.toString());
         }
         long elapsed=(System.currentTimeMillis()-startTime)/1000;
         tvTime.setText("চলছে: "+(elapsed/60)+" মিনিট "+(elapsed%60)+" সেকেন্ড");
@@ -184,23 +249,27 @@ public class MainActivity extends Activity {
         try{
             long rx=android.net.TrafficStats.getMobileRxBytes();
             long tx=android.net.TrafficStats.getMobileTxBytes();
-            long total=(rx+tx)/(1024*1024);
-            tvData.setText("Data ব্যবহার: "+total+" MB");
+            long total=(rx+tx)/1024;
+            tvData.setText("Data: "+(total/1024)+" MB ("+(total)+" KB)");
         }catch(Exception e){}
-        new Thread(new Runnable(){
-            public void run(){
-                final long ping=measurePing();
-                final String pingText=ping>=0?"Ping: "+ping+" ms":"Ping: timeout";
-                final int pingColor=ping<0?Color.RED:
-                    ping<100?Color.parseColor("#00CC44"):
-                    ping<300?Color.parseColor("#FFD700"):Color.parseColor("#E63329");
-                runOnUiThread(new Runnable(){
-                    public void run(){
-                        tvPing.setText(pingText);
-                        tvPing.setTextColor(pingColor);
-                    }
-                });
-            }
+        new Thread(()->{
+            final long ping=measurePing();
+            lastPing=ping;
+            try{
+                long rx=android.net.TrafficStats.getMobileRxBytes();
+                long tx=android.net.TrafficStats.getMobileTxBytes();
+                long dataKB=(rx+tx)/1024;
+                logger.log(network,ping,dataKB);
+            }catch(Exception e){}
+            final String pingText=ping>=0?"Ping: "+ping+" ms":"Ping: timeout";
+            final int pingColor=ping<0?Color.RED:
+                ping<100?Color.parseColor("#00CC44"):
+                ping<300?Color.parseColor("#FFD700"):Color.parseColor("#E63329");
+            runOnUiThread(()->{
+                tvPing.setText(pingText);
+                tvPing.setTextColor(pingColor);
+                updateHistory(timeSeek.getProgress());
+            });
         }).start();
     }
     private long measurePing(){

@@ -92,11 +92,23 @@
             android:id="@+id/btnCalc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="📊 CALCULATE"
+            android:text="📊 VIEW"
             android:textSize="16sp"
             android:textStyle="bold"
             android:backgroundTint="#ff4757"
             android:padding="16dp"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnAddMeal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="✅ ADD TO MEAL"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#2ed573"
+            android:padding="16dp"
+            android:visibility="gone"
             android:layout_marginBottom="20dp"/>
 
         <TextView
@@ -145,7 +157,7 @@
             android:text="📊 VIEW HISTORY"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:backgroundTint="#2ed573"
+            android:backgroundTint="#ffa502"
             android:padding="16dp"
             android:layout_marginBottom="16dp"/>
 

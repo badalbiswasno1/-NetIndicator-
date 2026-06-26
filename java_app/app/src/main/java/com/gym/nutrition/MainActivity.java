@@ -12,13 +12,13 @@ import org.json.JSONObject;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Scanner;
 
 public class MainActivity extends AppCompatActivity {
     HashMap<String, Food> db = new HashMap<>();
-    Food selected = null;
+    Food selectedFood = null;
+    double selectedCal = 0, selectedPro = 0, selectedFat = 0, selectedCarbs = 0;
     SharedPreferences prefs;
     String lang = "en";
     ArrayList<HistoryItem> historyList = new ArrayList<>();
@@ -190,21 +190,105 @@ public class MainActivity extends AppCompatActivity {
             double w = Double.parseDouble(((EditText)findViewById(R.id.etWeight)).getText().toString().isEmpty() ? "100" : ((EditText)findViewById(R.id.etWeight)).getText().toString());
             int q = Integer.parseInt(((EditText)findViewById(R.id.etQty)).getText().toString().isEmpty() ? "1" : ((EditText)findViewById(R.id.etQty)).getText().toString());
             double r = w / 100;
-            double tc = f.cal*r*q, tp = f.pro*r*q, tf = f.fat*r*q, tcb = f.carbs*r*q;
-            show(f.name, f.emoji, tc, tp, tf, tcb, f.tip);
-            addToHistory(f.name, tc, tp, tf, tcb);
+            selectedCal = f.cal*r*q;
+            selectedPro = f.pro*r*q;
+            selectedFat = f.fat*r*q;
+            selectedCarbs = f.carbs*r*q;
+            selectedFood = f;
+            show(f.name, f.emoji, selectedCal, selectedPro, selectedFat, selectedCarbs, f.tip);
+            findViewById(R.id.btnAddMeal).setVisibility(View.VISIBLE);
         });
         
         findViewById(R.id.btnSearch).setOnClickListener(v -> searchOnline());
         findViewById(R.id.btnSettings).setOnClickListener(v -> showSettings());
         findViewById(R.id.btnHistory).setOnClickListener(v -> showHistory());
+        findViewById(R.id.btnAddMeal).setOnClickListener(v -> addToMeal());
     }
     
-    void addToHistory(String name, double cal, double pro, double fat, double carbs) {
+    void addToMeal() {
+        if (selectedFood == null) return;
         String today = java.text.SimpleDateFormat.getDateInstance().format(new java.util.Date());
-        historyList.add(new HistoryItem(today, name, cal, pro, fat, carbs));
+        historyList.add(new HistoryItem(today, selectedFood.name, selectedCal, selectedPro, selectedFat, selectedCarbs));
         saveHistory();
         showDailyTotal();
+        Toast.makeText(this, "✅ Added to today's meal!", Toast.LENGTH_SHORT).show();
+        findViewById(R.id.btnAddMeal).setVisibility(View.GONE);
+    }
+    
+    void searchOnline() {
+        String q = ((EditText)findViewById(R.id.etSearch)).getText().toString().trim();
+        if(q.isEmpty()) return;
+        try {
+            HttpURLConnection c = (HttpURLConnection)new URL("https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query="+q+"&pageSize=5").openConnection();
+            Scanner s = new Scanner(c.getInputStream());
+            StringBuilder b = new StringBuilder();
+            while(s.hasNext()) b.append(s.nextLine());
+            JSONArray foods = new JSONObject(b.toString()).getJSONArray("foods");
+            
+            LinearLayout resultsContainer = findViewById(R.id.searchResultsContainer);
+            resultsContainer.removeAllViews();
+            
+            for(int i=0;i<foods.length();i++) {
+                JSONObject f = foods.getJSONObject(i);
+                double cal=0,pro=0,fat=0,carbs=0;
+                for(int j=0;j<f.getJSONArray("foodNutrients").length();j++) {
+                    JSONObject n = f.getJSONArray("foodNutrients").getJSONObject(j);
+                    String nn = n.getString("nutrientName");
+                    if(nn.equals("Energy")) cal=n.getDouble("value");
+                    else if(nn.equals("Protein")) pro=n.getDouble("value");
+                    else if(nn.contains("fat")) fat=n.getDouble("value");
+                    else if(nn.contains("Carbohydrate")) carbs=n.getDouble("value");
+                }
+                
+                Button btn = new Button(this);
+                btn.setText(f.getString("description") + "\n🔥 " + Math.round(cal) + " kcal | 💪 " + pro + "g | per 100g");
+                btn.setBackgroundColor(0xFF1a1a2e);
+                btn.setTextColor(0xFFFFFFFF);
+                btn.setPadding(20, 20, 20, 20);
+                btn.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ));
+                ((LinearLayout.LayoutParams)btn.getLayoutParams()).setMargins(0, 8, 0, 8);
+                
+                final double fcal=cal, fpro=pro, ffat=fat, fcarbs=carbs;
+                final String fname = f.getString("description");
+                btn.setOnClickListener(v -> {
+                    selectedFood = new Food(fname, "🌐", fcal, fpro, ffat, fcarbs, "Online data from USDA");
+                    double w = Double.parseDouble(((EditText)findViewById(R.id.etWeight)).getText().toString().isEmpty() ? "100" : ((EditText)findViewById(R.id.etWeight)).getText().toString());
+                    int qt = Integer.parseInt(((EditText)findViewById(R.id.etQty)).getText().toString().isEmpty() ? "1" : ((EditText)findViewById(R.id.etQty)).getText().toString());
+                    double r = w / 100;
+                    selectedCal = selectedFood.cal*r*qt;
+                    selectedPro = selectedFood.pro*r*qt;
+                    selectedFat = selectedFood.fat*r*qt;
+                    selectedCarbs = selectedFood.carbs*r*qt;
+                    show(selectedFood.name, selectedFood.emoji, selectedCal, selectedPro, selectedFat, selectedCarbs, selectedFood.tip);
+                    findViewById(R.id.btnAddMeal).setVisibility(View.VISIBLE);
+                });
+                
+                resultsContainer.addView(btn);
+            }
+        } catch(Exception e) {
+            Toast.makeText(this, "Internet error! Use offline mode.", Toast.LENGTH_LONG).show();
+        }
+    }
+    
+    void show(String n, String e, double c, double p, double f, double cb, String tip) {
+        findViewById(R.id.layoutResults).setVisibility(View.VISIBLE);
+        ((TextView)findViewById(R.id.tvFoodName)).setText(e + " " + n);
+        ((TextView)findViewById(R.id.tvCalories)).setText(String.format("%.1f", c));
+        ((TextView)findViewById(R.id.tvProtein)).setText(String.format("%.1f g", p));
+        ((TextView)findViewById(R.id.tvFat)).setText(String.format("%.1f g", f));
+        ((TextView)findViewById(R.id.tvCarbs)).setText(String.format("%.1f g", cb));
+        ((TextView)findViewById(R.id.tvTip)).setText("💡 " + tip);
+        
+        int proteinPct = Math.min((int)((p/150)*100), 100);
+        int calPct = Math.min((int)((c/2500)*100), 100);
+        
+        ((ProgressBar)findViewById(R.id.proteinBar)).setProgress(proteinPct);
+        ((ProgressBar)findViewById(R.id.calBar)).setProgress(calPct);
+        ((TextView)findViewById(R.id.tvProteinPct)).setText(proteinPct + "%");
+        ((TextView)findViewById(R.id.tvCalPct)).setText(calPct + "%");
     }
     
     void saveHistory() {
@@ -288,77 +372,6 @@ public class MainActivity extends AppCompatActivity {
         new AlertDialog.Builder(this).setView(sv).setPositiveButton("OK", null).show();
     }
     
-    void searchOnline() {
-        String q = ((EditText)findViewById(R.id.etSearch)).getText().toString().trim();
-        if(q.isEmpty()) return;
-        try {
-            HttpURLConnection c = (HttpURLConnection)new URL("https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query="+q+"&pageSize=5").openConnection();
-            Scanner s = new Scanner(c.getInputStream());
-            StringBuilder b = new StringBuilder();
-            while(s.hasNext()) b.append(s.nextLine());
-            JSONArray foods = new JSONObject(b.toString()).getJSONArray("foods");
-            
-            LinearLayout resultsContainer = findViewById(R.id.searchResultsContainer);
-            resultsContainer.removeAllViews();
-            
-            for(int i=0;i<foods.length();i++) {
-                JSONObject f = foods.getJSONObject(i);
-                double cal=0,pro=0,fat=0,carbs=0;
-                for(int j=0;j<f.getJSONArray("foodNutrients").length();j++) {
-                    JSONObject n = f.getJSONArray("foodNutrients").getJSONObject(j);
-                    String nn = n.getString("nutrientName");
-                    if(nn.equals("Energy")) cal=n.getDouble("value");
-                    else if(nn.equals("Protein")) pro=n.getDouble("value");
-                    else if(nn.contains("fat")) fat=n.getDouble("value");
-                    else if(nn.contains("Carbohydrate")) carbs=n.getDouble("value");
-                }
-                
-                Button btn = new Button(this);
-                btn.setText(f.getString("description") + "\n🔥 " + Math.round(cal) + " kcal | 💪 " + pro + "g | per 100g");
-                btn.setBackgroundColor(0xFF1a1a2e);
-                btn.setTextColor(0xFFFFFFFF);
-                btn.setPadding(20, 20, 20, 20);
-                btn.setLayoutParams(new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ));
-                ((LinearLayout.LayoutParams)btn.getLayoutParams()).setMargins(0, 8, 0, 8);
-                
-                final double fcal=cal, fpro=pro, ffat=fat, fcarbs=carbs;
-                final String fname = f.getString("description");
-                btn.setOnClickListener(v -> {
-                    selected = new Food(fname, "🌐", fcal, fpro, ffat, fcarbs, "Online data from USDA");
-                    double w = Double.parseDouble(((EditText)findViewById(R.id.etWeight)).getText().toString().isEmpty() ? "100" : ((EditText)findViewById(R.id.etWeight)).getText().toString());
-                    int qt = Integer.parseInt(((EditText)findViewById(R.id.etQty)).getText().toString().isEmpty() ? "1" : ((EditText)findViewById(R.id.etQty)).getText().toString());
-                    double r = w / 100;
-                    show(selected.name, selected.emoji, selected.cal*r*qt, selected.pro*r*qt, selected.fat*r*qt, selected.carbs*r*qt, selected.tip);
-                });
-                
-                resultsContainer.addView(btn);
-            }
-        } catch(Exception e) {
-            Toast.makeText(this, "Internet error! Use offline mode.", Toast.LENGTH_LONG).show();
-        }
-    }
-    
-    void show(String n, String e, double c, double p, double f, double cb, String tip) {
-        findViewById(R.id.layoutResults).setVisibility(View.VISIBLE);
-        ((TextView)findViewById(R.id.tvFoodName)).setText(e + " " + n);
-        ((TextView)findViewById(R.id.tvCalories)).setText(String.format("%.1f", c));
-        ((TextView)findViewById(R.id.tvProtein)).setText(String.format("%.1f g", p));
-        ((TextView)findViewById(R.id.tvFat)).setText(String.format("%.1f g", f));
-        ((TextView)findViewById(R.id.tvCarbs)).setText(String.format("%.1f g", cb));
-        ((TextView)findViewById(R.id.tvTip)).setText("💡 " + tip);
-        
-        int proteinPct = Math.min((int)((p/150)*100), 100);
-        int calPct = Math.min((int)((c/2500)*100), 100);
-        
-        ((ProgressBar)findViewById(R.id.proteinBar)).setProgress(proteinPct);
-        ((ProgressBar)findViewById(R.id.calBar)).setProgress(calPct);
-        ((TextView)findViewById(R.id.tvProteinPct)).setText(proteinPct + "%");
-        ((TextView)findViewById(R.id.tvCalPct)).setText(calPct + "%");
-    }
-    
     void showSettings() {
         String[] langs = {"English", "বাংলা (Bengali)", "हिंदी (Hindi)"};
         new AlertDialog.Builder(this)
@@ -377,18 +390,22 @@ public class MainActivity extends AppCompatActivity {
             ((TextView)findViewById(R.id.tvTitle)).setText("💪 জিম নিউট্রিশন");
             ((EditText)findViewById(R.id.etWeight)).setHint("⚖️ ওজন (গ্রাম)");
             ((EditText)findViewById(R.id.etQty)).setHint("🔢 পরিমাণ");
-            ((Button)findViewById(R.id.btnCalc)).setText("📹 হিসাব করুন");
+            ((Button)findViewById(R.id.btnCalc)).setText("📹 দেখুন");
+            ((Button)findViewById(R.id.btnAddMeal)).setText("✅ খাবারে যোগ করুন");
             ((EditText)findViewById(R.id.etSearch)).setHint("🔍 অনলাইনে খুঁজুন...");
             ((Button)findViewById(R.id.btnSearch)).setText("🔍 অনলাইন সার্চ");
+            ((Button)findViewById(R.id.btnHistory)).setText("📊 ইতিহাস দেখুন");
             ((TextView)findViewById(R.id.tvOfflineLabel)).setText("📴 অফলাইন ফুড (34টি)");
             ((TextView)findViewById(R.id.tvOnlineLabel)).setText("🌐 অনলাইন সার্চ");
         } else if (lang.equals("hi")) {
             ((TextView)findViewById(R.id.tvTitle)).setText("💪 जिम न्यूट्रिशन");
             ((EditText)findViewById(R.id.etWeight)).setHint("⚖️ वजन (ग्राम)");
             ((EditText)findViewById(R.id.etQty)).setHint("🔢 मात्रा");
-            ((Button)findViewById(R.id.btnCalc)).setText("📹 गणना करें");
+            ((Button)findViewById(R.id.btnCalc)).setText("📹 देखें");
+            ((Button)findViewById(R.id.btnAddMeal)).setText("✅ भोजन में जोड़ें");
             ((EditText)findViewById(R.id.etSearch)).setHint("🔍 ऑनलाइन खोजें...");
             ((Button)findViewById(R.id.btnSearch)).setText("🔍 ऑनलाइन सर्च");
+            ((Button)findViewById(R.id.btnHistory)).setText("📊 इतिहास देखें");
             ((TextView)findViewById(R.id.tvOfflineLabel)).setText("📴 ऑफलाइन फूड (34)");
             ((TextView)findViewById(R.id.tvOnlineLabel)).setText("🌐 ऑनलाइन सर्च");
         }

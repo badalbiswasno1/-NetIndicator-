@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#0a0a14">
@@ -37,10 +38,19 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tvDailyTotal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📅 Today: 0 kcal | 0g protein"
+            android:textColor="#2ed573"
+            android:textSize="14sp"
+            android:padding="8dp"/>
+
+        <TextView
             android:id="@+id/tvOfflineLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="📴 Offline Food (23 items)"
+            android:text="📴 Offline Food (34 items)"
             android:textColor="#2ed573"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -126,6 +136,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btnHistory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📊 VIEW HISTORY"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#2ed573"
+            android:padding="16dp"
             android:layout_marginBottom="16dp"/>
 
         <LinearLayout

@@ -11,6 +11,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -19,12 +21,21 @@ public class MainActivity extends AppCompatActivity {
     Food selected = null;
     SharedPreferences prefs;
     String lang = "en";
+    ArrayList<HistoryItem> historyList = new ArrayList<>();
     
     class Food {
         String name, emoji, tip;
         double cal, pro, fat, carbs;
         Food(String n, String e, double c, double p, double f, double cb, String t) {
             name = n; emoji = e; cal = c; pro = p; fat = f; carbs = cb; tip = t;
+        }
+    }
+    
+    class HistoryItem {
+        String date, foodName;
+        double totalCal, totalPro, totalFat, totalCarbs;
+        HistoryItem(String d, String f, double c, double p, double fa, double cb) {
+            date = d; foodName = f; totalCal = c; totalPro = p; totalFat = fa; totalCarbs = cb;
         }
     }
     
@@ -37,9 +48,11 @@ public class MainActivity extends AppCompatActivity {
         prefs = getSharedPreferences("GymNutrition", MODE_PRIVATE);
         lang = prefs.getString("language", "en");
         
+        loadHistory();
         initDB();
         initViews();
         updateLanguage();
+        showDailyTotal();
     }
     
     void initDB() {
@@ -66,6 +79,17 @@ public class MainActivity extends AppCompatActivity {
         db.put("chana", new Food(getString("Chana/Chickpeas"), "🫘", 164, 8.9, 2.6, 27, "Fiber + protein! Satiety king"));
         db.put("curd", new Food(getString("Curd/Yogurt"), "🥣", 98, 11, 4.3, 3.4, "Probiotic! Digestion helper"));
         db.put("ghee", new Food(getString("Ghee"), "🧈", 900, 0, 100, 0, "Healthy fats! Bulletproof coffee"));
+        db.put("bhat", new Food(getString("Bhat/Rice"), "🍚", 130, 2.7, 0.3, 28, "Bengali staple! Lunch essential"));
+        db.put("mach", new Food(getString("Ilish/Hilsa"), "🐟", 220, 22, 14, 0, "Bengali favorite! Omega-3 rich"));
+        db.put("chingri", new Food(getString("Chingri/Prawn"), "🦐", 106, 20, 1.7, 0, "Low fat protein! Bengali delicacy"));
+        db.put("mutton", new Food(getString("Mutton/Khashi"), "🍖", 294, 25, 21, 0, "Bengali special! Iron rich"));
+        db.put("luchi", new Food(getString("Luchi/Puri"), "🫓", 325, 6, 15, 42, "Sunday special! Deep fried"));
+        db.put("alurdom", new Food(getString("Alur Dom"), "🥔", 180, 4, 8, 25, "Bengali snack! Spicy potato"));
+        db.put("singara", new Food(getString("Singara/Samosa"), "🥟", 260, 4, 15, 28, "Evening snack! Crispy"));
+        db.put("mishti", new Food(getString("Mishti/Sweets"), "🍬", 350, 6, 15, 50, "Bengali sweet! Occasional treat"));
+        db.put("shukto", new Food(getString("Shukto"), "🥗", 85, 3, 4, 10, "Bengali starter! Bitter veg mix"));
+        db.put("macherjhol", new Food(getString("Macher Jhol"), "🍲", 150, 18, 6, 5, "Bengali fish curry! Light and tasty"));
+        db.put("kosha", new Food(getString("Mangsho Kosha"), "🍖", 320, 28, 22, 3, "Bengali mutton curry! Spicy"));
     }
     
     String getString(String en) {
@@ -94,6 +118,17 @@ public class MainActivity extends AppCompatActivity {
                 case "Chana/Chickpeas": return "ছোলা";
                 case "Curd/Yogurt": return "দই";
                 case "Ghee": return "ঘি";
+                case "Bhat/Rice": return "ভাত";
+                case "Ilish/Hilsa": return "ইলিশ মাছ";
+                case "Chingri/Prawn": return "চিংড়ি";
+                case "Mutton/Khashi": return "খাসির মাংস";
+                case "Luchi/Puri": return "লুচি";
+                case "Alur Dom": return "আলুর দম";
+                case "Singara/Samosa": return "সিঙ্গারা";
+                case "Mishti/Sweets": return "মিষ্টি";
+                case "Shukto": return "শুক্তো";
+                case "Macher Jhol": return "মাছের ঝোল";
+                case "Mangsho Kosha": return "মাংস কষা";
                 default: return en;
             }
         } else if (lang.equals("hi")) {
@@ -121,6 +156,17 @@ public class MainActivity extends AppCompatActivity {
                 case "Chana/Chickpeas": return "छोले";
                 case "Curd/Yogurt": return "दही";
                 case "Ghee": return "घी";
+                case "Bhat/Rice": return "भात";
+                case "Ilish/Hilsa": return "इलिश मछली";
+                case "Chingri/Prawn": return "चिंगड़ी";
+                case "Mutton/Khashi": return "खासी का मांस";
+                case "Luchi/Puri": return "लुची";
+                case "Alur Dom": return "आलूर दम";
+                case "Singara/Samosa": return "सिंगाड़ा";
+                case "Mishti/Sweets": return "मिष्टी";
+                case "Shukto": return "शुक्तो";
+                case "Macher Jhol": return "माछेर झोल";
+                case "Mangsho Kosha": return "मांगशो कोशा";
                 default: return en;
             }
         }
@@ -144,12 +190,102 @@ public class MainActivity extends AppCompatActivity {
             double w = Double.parseDouble(((EditText)findViewById(R.id.etWeight)).getText().toString().isEmpty() ? "100" : ((EditText)findViewById(R.id.etWeight)).getText().toString());
             int q = Integer.parseInt(((EditText)findViewById(R.id.etQty)).getText().toString().isEmpty() ? "1" : ((EditText)findViewById(R.id.etQty)).getText().toString());
             double r = w / 100;
-            show(f.name, f.emoji, f.cal*r*q, f.pro*r*q, f.fat*r*q, f.carbs*r*q, f.tip);
+            double tc = f.cal*r*q, tp = f.pro*r*q, tf = f.fat*r*q, tcb = f.carbs*r*q;
+            show(f.name, f.emoji, tc, tp, tf, tcb, f.tip);
+            addToHistory(f.name, tc, tp, tf, tcb);
         });
         
         findViewById(R.id.btnSearch).setOnClickListener(v -> searchOnline());
-        
         findViewById(R.id.btnSettings).setOnClickListener(v -> showSettings());
+        findViewById(R.id.btnHistory).setOnClickListener(v -> showHistory());
+    }
+    
+    void addToHistory(String name, double cal, double pro, double fat, double carbs) {
+        String today = java.text.SimpleDateFormat.getDateInstance().format(new java.util.Date());
+        historyList.add(new HistoryItem(today, name, cal, pro, fat, carbs));
+        saveHistory();
+        showDailyTotal();
+    }
+    
+    void saveHistory() {
+        StringBuilder sb = new StringBuilder();
+        for (HistoryItem h : historyList) {
+            sb.append(h.date).append("|").append(h.foodName).append("|")
+              .append(h.totalCal).append("|").append(h.totalPro).append("|")
+              .append(h.totalFat).append("|").append(h.totalCarbs).append("\n");
+        }
+        prefs.edit().putString("history", sb.toString()).apply();
+    }
+    
+    void loadHistory() {
+        String data = prefs.getString("history", "");
+        if (data.isEmpty()) return;
+        String[] lines = data.split("\n");
+        for (String line : lines) {
+            if (line.isEmpty()) continue;
+            String[] parts = line.split("\\|");
+            if (parts.length == 6) {
+                historyList.add(new HistoryItem(parts[0], parts[1], 
+                    Double.parseDouble(parts[2]), Double.parseDouble(parts[3]),
+                    Double.parseDouble(parts[4]), Double.parseDouble(parts[5])));
+            }
+        }
+    }
+    
+    void showDailyTotal() {
+        String today = java.text.SimpleDateFormat.getDateInstance().format(new java.util.Date());
+        double totalCal = 0, totalPro = 0;
+        for (HistoryItem h : historyList) {
+            if (h.date.equals(today)) {
+                totalCal += h.totalCal;
+                totalPro += h.totalPro;
+            }
+        }
+        TextView tvDaily = findViewById(R.id.tvDailyTotal);
+        if (tvDaily != null) {
+            tvDaily.setText(String.format("📅 Today: 🔥 %.0f kcal | 💪 %.1f g protein", totalCal, totalPro));
+        }
+    }
+    
+    void showHistory() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(20, 20, 20, 20);
+        layout.setBackgroundColor(0xFF0a0a14);
+        
+        TextView title = new TextView(this);
+        title.setText("📊 Last 14 Days History");
+        title.setTextColor(0xFFff4757);
+        title.setTextSize(20);
+        title.setPadding(0, 0, 0, 20);
+        layout.addView(title);
+        
+        HashMap<String, Double> dailyCal = new HashMap<>();
+        HashMap<String, Double> dailyPro = new HashMap<>();
+        
+        for (HistoryItem h : historyList) {
+            dailyCal.put(h.date, dailyCal.getOrDefault(h.date, 0.0) + h.totalCal);
+            dailyPro.put(h.date, dailyPro.getOrDefault(h.date, 0.0) + h.totalPro);
+        }
+        
+        ArrayList<String> dates = new ArrayList<>(dailyCal.keySet());
+        for (int i = dates.size() - 1; i >= 0 && i >= dates.size() - 14; i--) {
+            String d = dates.get(i);
+            TextView tv = new TextView(this);
+            tv.setText(String.format("📅 %s\n🔥 %.0f kcal | 💪 %.1f g protein", d, dailyCal.get(d), dailyPro.get(d)));
+            tv.setTextColor(0xFFFFFFFF);
+            tv.setPadding(10, 15, 10, 15);
+            tv.setBackgroundColor(0xFF1a1a2e);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 8, 0, 8);
+            tv.setLayoutParams(lp);
+            layout.addView(tv);
+        }
+        
+        ScrollView sv = new ScrollView(this);
+        sv.addView(layout);
+        new AlertDialog.Builder(this).setView(sv).setPositiveButton("OK", null).show();
     }
     
     void searchOnline() {
@@ -244,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
             ((Button)findViewById(R.id.btnCalc)).setText("📹 হিসাব করুন");
             ((EditText)findViewById(R.id.etSearch)).setHint("🔍 অনলাইনে খুঁজুন...");
             ((Button)findViewById(R.id.btnSearch)).setText("🔍 অনলাইন সার্চ");
-            ((TextView)findViewById(R.id.tvOfflineLabel)).setText("📴 অফলাইন ফুড (23টি)");
+            ((TextView)findViewById(R.id.tvOfflineLabel)).setText("📴 অফলাইন ফুড (34টি)");
             ((TextView)findViewById(R.id.tvOnlineLabel)).setText("🌐 অনলাইন সার্চ");
         } else if (lang.equals("hi")) {
             ((TextView)findViewById(R.id.tvTitle)).setText("💪 जिम न्यूट्रिशन");
@@ -253,7 +389,7 @@ public class MainActivity extends AppCompatActivity {
             ((Button)findViewById(R.id.btnCalc)).setText("📹 गणना करें");
             ((EditText)findViewById(R.id.etSearch)).setHint("🔍 ऑनलाइन खोजें...");
             ((Button)findViewById(R.id.btnSearch)).setText("🔍 ऑनलाइन सर्च");
-            ((TextView)findViewById(R.id.tvOfflineLabel)).setText("📴 ऑफलाइन फूड (23)");
+            ((TextView)findViewById(R.id.tvOfflineLabel)).setText("📴 ऑफलाइन फूड (34)");
             ((TextView)findViewById(R.id.tvOnlineLabel)).setText("🌐 ऑनलाइन सर्च");
         }
     }

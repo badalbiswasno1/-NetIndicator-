@@ -33,7 +33,7 @@
                 android:layout_height="48dp"
                 android:background="@drawable/circle_btn"
                 android:src="@android:drawable/ic_menu_preferences"
-                android:tint="#ff4757"/>
+                app:tint="#ff4757"/>
         </LinearLayout>
 
         <TextView

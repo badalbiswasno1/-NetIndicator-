@@ -1,22 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0d0d1a">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="💪 Gym Nutrition" android:textColor="#e94560" android:textSize="24sp" android:textStyle="bold" android:gravity="center" android:padding="16dp"/>
-        <Spinner android:id="@+id/spinnerFood" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#1a1a2e" android:padding="12dp" android:layout_marginBottom="8dp"/>
-        <EditText android:id="@+id/etWeight" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="⚖️ Weight (g)" android:textColor="#fff" android:textColorHint="#888" android:background="#1a1a2e" android:padding="12dp" android:inputType="number" android:layout_marginBottom="8dp"/>
-        <EditText android:id="@+id/etQty" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="🔢 Qty" android:textColor="#fff" android:textColorHint="#888" android:background="#1a1a2e" android:padding="12dp" android:inputType="number" android:layout_marginBottom="8dp"/>
-        <Button android:id="@+id/btnCalc" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="📊 Calculate" android:backgroundTint="#e94560" android:layout_marginBottom="16dp"/>
-        <EditText android:id="@+id/etSearch" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="🔍 Search..." android:textColor="#fff" android:textColorHint="#888" android:background="#1a1a2e" android:padding="12dp" android:layout_marginBottom="8dp"/>
-        <Button android:id="@+id/btnSearch" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="🔍 Search Online" android:backgroundTint="#4ecdc4" android:layout_marginBottom="8dp"/>
-        <ListView android:id="@+id/listSearchResults" android:layout_width="match_parent" android:layout_height="200dp" android:background="#1a1a2e" android:layout_marginBottom="8dp"/>
-        <LinearLayout android:id="@+id/layoutResults" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="#1a1a2e" android:padding="16dp" android:visibility="gone">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="📊 Results" android:textColor="#e94560" android:textSize="20sp" android:textStyle="bold" android:paddingBottom="8dp"/>
-            <TextView android:id="@+id/tvResult" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#fff" android:textSize="16sp" android:padding="8dp"/>
-            <TextView android:id="@+id/tvProteinPct" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Protein: 0%" android:textColor="#fff"/>
-            <ProgressBar android:id="@+id/proteinBar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progressTint="#4ecdc4"/>
-            <TextView android:id="@+id/tvCalPct" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Calories: 0%" android:textColor="#fff" android:paddingTop="8dp"/>
-            <ProgressBar android:id="@+id/calBar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progressTint="#f7b731"/>
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0d0d1a">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Gym Nutrition"
+            android:textColor="#e94560"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:padding="16dp"/>
+        <Spinner
+            android:id="@+id/spinnerFood"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#1a1a2e"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"/>
+        <EditText
+            android:id="@+id/etWeight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Weight (g)"
+            android:textColor="#fff"
+            android:textColorHint="#888"
+            android:background="#1a1a2e"
+            android:padding="12dp"
+            android:inputType="number"
+            android:layout_marginBottom="8dp"/>
+        <EditText
+            android:id="@+id/etQty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Qty"
+            android:textColor="#fff"
+            android:textColorHint="#888"
+            android:background="#1a1a2e"
+            android:padding="12dp"
+            android:inputType="number"
+            android:layout_marginBottom="8dp"/>
+        <Button
+            android:id="@+id/btnCalc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Calculate"
+            android:backgroundTint="#e94560"
+            android:layout_marginBottom="16dp"/>
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Search..."
+            android:textColor="#fff"
+            android:textColorHint="#888"
+            android:background="#1a1a2e"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"/>
+        <Button
+            android:id="@+id/btnSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Search Online"
+            android:backgroundTint="#4ecdc4"
+            android:layout_marginBottom="8dp"/>
+        <ListView
+            android:id="@+id/listSearchResults"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="#1a1a2e"
+            android:layout_marginBottom="8dp"/>
+        <LinearLayout
+            android:id="@+id/layoutResults"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1a1a2e"
+            android:padding="16dp"
+            android:visibility="gone">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Results"
+                android:textColor="#e94560"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:paddingBottom="8dp"/>
+            <TextView
+                android:id="@+id/tvResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#fff"
+                android:textSize="16sp"
+                android:padding="8dp"/>
+            <TextView
+                android:id="@+id/tvProteinPct"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Protein: 0%"
+                android:textColor="#fff"/>
+            <ProgressBar
+                android:id="@+id/proteinBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progressTint="#4ecdc4"/>
+            <TextView
+                android:id="@+id/tvCalPct"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Calories: 0%"
+                android:textColor="#fff"
+                android:paddingTop="8dp"/>
+            <ProgressBar
+                android:id="@+id/calBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progressTint="#f7b731"/>
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

@@ -16,7 +16,8 @@ public class MainActivity extends AppCompatActivity {
     Food selected = null;
     
     class Food {
-        String name; double cal, pro, fat, carbs;
+        String name;
+        double cal, pro, fat, carbs;
         Food(String n, double c, double p, double f, double cb) {
             name = n; cal = c; pro = p; fat = f; carbs = cb;
         }
@@ -35,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
         db.put("paneer", new Food("Paneer", 265, 18, 21, 1.2));
         db.put("oats", new Food("Oats", 389, 16.9, 6.9, 66));
         
-        String[] items = {"🥚 Egg", "🍗 Chicken", "🍚 Rice", "🐟 Fish", "🧀 Paneer", "🌾 Oats"};
+        String[] items = {"Egg", "Chicken", "Rice", "Fish", "Paneer", "Oats"};
         Spinner sp = findViewById(R.id.spinnerFood);
         sp.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, items));
         
@@ -82,14 +83,14 @@ public class MainActivity extends AppCompatActivity {
                     show(selected.name, selected.cal*r*qt, selected.pro*r*qt, selected.fat*r*qt, selected.carbs*r*qt);
                 });
             } catch(Exception e) {
-                Toast.makeText(this, "❌ Internet error!", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Internet error!", Toast.LENGTH_LONG).show();
             }
         });
     }
     
     void show(String n, double c, double p, double f, double cb) {
         findViewById(R.id.layoutResults).setVisibility(View.VISIBLE);
-        ((TextView)findViewById(R.id.tvResult)).setText(String.format("🔥 %.1f kcal\n💪 %.1f g\n🥑 %.1f g\n🍞 %.1f g", c, p, f, cb));
+        ((TextView)findViewById(R.id.tvResult)).setText(String.format("Calories: %.1f\nProtein: %.1f g\nFat: %.1f g\nCarbs: %.1f g", c, p, f, cb));
         ((ProgressBar)findViewById(R.id.proteinBar)).setProgress(Math.min((int)((p/150)*100),100));
         ((ProgressBar)findViewById(R.id.calBar)).setProgress(Math.min((int)((c/2500)*100),100));
         ((TextView)findViewById(R.id.tvProteinPct)).setText("Protein: "+Math.min((int)((p/150)*100),100)+"%");
